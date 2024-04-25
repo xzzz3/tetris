@@ -17,19 +17,26 @@ func _ready():
 func _process(delta):
 	pass
 
-func rotate():
-	if (angle == 0):
+func rotate(index):
+	if (index == 0):
 		currVertices = verticesAt90
 		angle = 90
-	elif (angle == 90):
+	elif (index == 90):
 		currVertices = verticesAt180
 		angle = 180
-	elif (angle == 180):
+	elif (index == 180):
 		currVertices = verticesAt270
 		angle = 270
-	elif (angle == 270):
+	elif (index == 270):
 		currVertices = verticesAt0
 		angle = 0
 
+func rotateClockise():
+	var newAngle = (getRotationAngle() + 90) % 360
+	rotate(newAngle)
+
 func getCurrVertices():
 	return currVertices
+
+func getRotationAngle():
+	return angle
