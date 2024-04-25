@@ -24,9 +24,10 @@ var shapes_full := shapes.duplicate()
 # movement variables
 const start_pos := Vector2i(5,1)
 var curr_pos : Vector2i
-var steps : int
+var steps : Array
 const steps_req : int = 50
 var speed : float
+const directions := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -35,7 +36,7 @@ func _ready():
 func new_game():
 	# reset variables
 	speed = 1.0
-	steps = 0
+	steps = [0,0,0] # left, right, down
 	
 	piece_class = pick_piece_class()
 	piece_atlas = Vector2i(shapes_full.find(piece_class), 0)
@@ -43,12 +44,25 @@ func new_game():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	# apply downward movement every frame
-	steps += speed
-	if (steps > steps_req):
-		move_piece(Vector2i.DOWN)
-		steps = 0
+	# input keys
+	if Input.is_action_pressed("ui_down"):
+		steps[2] += 10
+	elif Input.is_action_pressed("ui_right"):
+		steps[1] += 10
+	elif Input.is_action_pressed("ui_left"):
+		steps[0] += 10
+	elif Input.is_action_just_pressed("ui_up"):
+		rotate_piece()
 	
+	# apply downward movement every frame
+	steps[2] += speed
+	
+	# update movement
+	for direction in range(steps.size()):
+		if (steps[direction] > steps_req):
+			move_piece(directions[direction])
+			steps[direction] = 0
+	 
 func pick_piece_class():
 	var piece
 	if shapes.is_empty():
@@ -59,6 +73,7 @@ func pick_piece_class():
 	
 func create_piece():
 	# reset variables
+	steps = [0,0,0]
 	curr_pos = start_pos
 	active_piece = piece_class.new()
 	get_parent().add_child(active_piece)
@@ -75,6 +90,29 @@ func draw_piece(piece, pos, atlas):
 		set_cell(active_layer, pos + coord, tile_id, atlas)
 		
 func move_piece(direction):
-	clear_piece()
-	curr_pos += direction
-	draw_piece(active_piece, curr_pos, piece_atlas)
+	if (can_move(direction)):
+		clear_piece()
+		curr_pos += direction
+		draw_piece(active_piece, curr_pos, piece_atlas)
+
+func rotate_piece():
+	if can_rotate():
+		clear_piece()
+		active_piece.rotateClockise()
+		draw_piece(active_piece, curr_pos, piece_atlas)
+
+func is_free(coord):
+	return get_cell_source_id(board_layer, coord) == -1
+	
+func can_move(direction):
+	# check if there is space to move
+	for coord in active_piece.getCurrVertices():
+		if not is_free(coord + curr_pos + direction):
+			return false
+	return true
+
+func can_rotate():
+	for coord in active_piece.getRotatedVertices():
+		if not is_free(coord + curr_pos):
+			return false
+	return true
