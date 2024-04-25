@@ -37,9 +37,12 @@ func new_game():
 	# reset variables
 	speed = 1.0
 	steps = [0,0,0] # left, right, down
+	$HUD.get_node("GameOverLabel").hide()
 	
 	piece_class = pick_piece_class()
 	piece_atlas = Vector2i(shapes_full.find(piece_class), 0)
+	next_piece_class = pick_piece_class()
+	next_piece_atlas = Vector2i(shapes_full.find(next_piece_class), 0)
 	create_piece()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -79,11 +82,15 @@ func create_piece():
 	get_parent().add_child(active_piece)
 	active_piece.rotate(rotation_index)
 	draw_piece(active_piece, curr_pos, piece_atlas)
+	
+	# draw next piece
+	var next_piece_preview = next_piece_class.new()
+	get_parent().add_child(next_piece_preview)
+	draw_piece(next_piece_preview, Vector2i(15,6), next_piece_atlas)
 
 func clear_piece():
 	for coord in active_piece.getCurrVertices():
 		erase_cell(active_layer, curr_pos + coord)
-	
 
 func draw_piece(piece, pos, atlas):
 	for coord in piece.getCurrVertices():
@@ -94,6 +101,15 @@ func move_piece(direction):
 		clear_piece()
 		curr_pos += direction
 		draw_piece(active_piece, curr_pos, piece_atlas)
+	else:
+		if direction == Vector2i.DOWN:
+			land_piece()
+			piece_class = next_piece_class
+			piece_atlas = next_piece_atlas
+			next_piece_class = pick_piece_class()
+			next_piece_atlas = Vector2i(shapes_full.find(next_piece_class), 0)
+			clear_panel()
+			create_piece()
 
 func rotate_piece():
 	if can_rotate():
@@ -116,3 +132,14 @@ func can_rotate():
 		if not is_free(coord + curr_pos):
 			return false
 	return true
+
+func land_piece():
+	# remove from active layer and move to board layer
+	for coord in active_piece.getCurrVertices():
+		erase_cell(active_layer, curr_pos + coord)
+		set_cell(board_layer, curr_pos + coord, tile_id, piece_atlas)
+		
+func clear_panel():
+	for x in range(14,19):
+		for y in range(5,9):
+			erase_cell(active_layer, Vector2i(x,y))
