@@ -5,13 +5,13 @@ const ROWS : int = 20
 
 # game content variables
 var piece_class
-var next_piece_class
+var next_piece_class : Array
 var rotation_index : int = 0
 var active_piece
 
 var tile_id : int = 0
 var piece_atlas : Vector2i
-var next_piece_atlas : Vector2i
+var next_piece_atlas : Array
 
 var game_running : bool
 
@@ -51,8 +51,11 @@ func new_game():
 	
 	piece_class = pick_piece_class()
 	piece_atlas = Vector2i(shapes_full.find(piece_class), 0)
-	next_piece_class = pick_piece_class()
-	next_piece_atlas = Vector2i(shapes_full.find(next_piece_class), 0)
+	next_piece_class = []
+	next_piece_atlas = []
+	for i in range(3):
+		next_piece_class.append(pick_piece_class())
+		next_piece_atlas.append(Vector2i(shapes_full.find(next_piece_class[i]), 0))
 	create_piece()
 
 func restart():
@@ -105,9 +108,10 @@ func create_piece():
 	draw_piece(active_piece, curr_pos, piece_atlas)
 	
 	# draw next piece
-	var next_piece_preview = next_piece_class.new()
-	get_parent().add_child(next_piece_preview)
-	draw_piece(next_piece_preview, Vector2i(15,6), next_piece_atlas)
+	for idx in range(3):
+		var next_piece_preview = next_piece_class[idx].new()
+		get_parent().add_child(next_piece_preview)
+		draw_piece(next_piece_preview, Vector2i(15,6 + 3 * idx), next_piece_atlas[idx])
 
 func clear_piece():
 	for coord in active_piece.getCurrVertices():
@@ -126,10 +130,12 @@ func move_piece(direction):
 		if direction == Vector2i.DOWN:
 			land_piece()
 			check_rows()
-			piece_class = next_piece_class
-			piece_atlas = next_piece_atlas
-			next_piece_class = pick_piece_class()
-			next_piece_atlas = Vector2i(shapes_full.find(next_piece_class), 0)
+			piece_class = next_piece_class[0]
+			piece_atlas = next_piece_atlas[0]
+			next_piece_class.pop_front()
+			next_piece_class.append(pick_piece_class())
+			next_piece_atlas.pop_front()
+			next_piece_atlas.append(Vector2i(shapes_full.find(next_piece_class[2]), 0))
 			clear_panel()
 			create_piece()
 			check_game_over()
@@ -164,7 +170,7 @@ func land_piece():
 		
 func clear_panel():
 	for x in range(14,19):
-		for y in range(5,9):
+		for y in range(5,15):
 			erase_cell(active_layer, Vector2i(x,y))
 
 func check_rows():
